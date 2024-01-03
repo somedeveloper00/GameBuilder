@@ -260,6 +260,7 @@ namespace GameBuilderEditor
             var postBuildCommandProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.postBuildCommand));
             var compressFilesProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFiles));
             var compressFilePathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFilePath));
+            var compressionLevelProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressionLevel));
             var buildPathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildPath));
 
             EditorGUILayout.PropertyField(labelProp);
@@ -270,6 +271,7 @@ namespace GameBuilderEditor
             if (compressFilesProp.boolValue)
             {
                 EditorGUILayout.PropertyField(compressFilePathProp);
+                EditorGUILayout.PropertyField(compressionLevelProp);
             }
             EditorGUILayout.PropertyField(postBuildCommandProp, GUILayout.Height(100));
             EditorGUILayout.PropertyField(buildOptionsProp);
