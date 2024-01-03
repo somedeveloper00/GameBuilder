@@ -383,7 +383,7 @@ namespace GameBuilderEditor
 
                 var fileInfo = new FileInfo(r.summary.outputPath);
 
-                var compressedFilePath = model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length + 1);
+                var compressedFilePath = model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length);
 
                 // open in terminal
                 if (buildSettings.openInTerminal)
