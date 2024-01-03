@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using WebSocketSharp;
 using Debug = UnityEngine.Debug;
 
 namespace GameBuilderEditor
@@ -257,12 +258,19 @@ namespace GameBuilderEditor
             var openInTerminalProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.openInTerminal));
             var instancesToRunProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.instancesToRun));
             var postBuildCommandProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.postBuildCommand));
+            var compressFilesProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFiles));
+            var compressFilePathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFilePath));
             var buildPathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildPath));
 
             EditorGUILayout.PropertyField(labelProp);
             EditorGUILayout.PropertyField(openInTerminalProp);
             EditorGUILayout.PropertyField(instancesToRunProp);
             EditorGUILayout.PropertyField(buildPathProp);
+            EditorGUILayout.PropertyField(compressFilesProp);
+            if (compressFilesProp.boolValue)
+            {
+                EditorGUILayout.PropertyField(compressFilePathProp);
+            }
             EditorGUILayout.PropertyField(postBuildCommandProp, GUILayout.Height(100));
             EditorGUILayout.PropertyField(buildOptionsProp);
             using var scroll = new GUILayout.ScrollViewScope(_infoScrollPos);
@@ -369,22 +377,46 @@ namespace GameBuilderEditor
                 serializedObject?.Update();
 
                 var fileInfo = new FileInfo(r.summary.outputPath);
+
+                var compressedFilePath = string.Format(buildSettings.compressFilePath,
+                    fileInfo.FullName, fileInfo.Directory.FullName, Application.version, model.history.Length, "zip");
+
+                // open in terminal
                 if (buildSettings.openInTerminal)
                 {
                     GameBuilderOsOperations.OpenTerminalAtDirectory(fileInfo.Directory.FullName);
                 }
 
+                // run instances
                 for (int i = 0; i < buildSettings.instancesToRun; i++)
                 {
                     GameBuilderOsOperations.OpenFile(fileInfo.FullName);
                 }
 
+                // compress
+                if (buildSettings.compressFiles)
+                {
+                    var files = Directory.GetFiles(fileInfo.Directory.FullName, "*/*", SearchOption.AllDirectories)
+                        .Where(f => f != "DoNotShip").ToArray();
+                    try
+                    {
+                        GameBuilderCompression.ZipFiles(files, compressedFilePath, buildSettings.compressionLevel);
+                        Debug.LogFormat("successfully compressed into {0}", compressedFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError("error while compressing. see the next log for exception");
+                        Debug.LogException(ex);
+                    }
+                }
+
+                // post build commands
                 if (!string.IsNullOrEmpty(buildSettings.postBuildCommand))
                 {
                     try
                     {
                         var cmd = string.Format(buildSettings.postBuildCommand, fileInfo.FullName, fileInfo.Directory.FullName,
-                            Application.version, model.history.Length);
+                            Application.version, model.history.Length, "zip");
                         GameBuilderOsOperations.ExecuteBatch(fileInfo.Directory.FullName, cmd);
                     }
                     catch (Exception ex)

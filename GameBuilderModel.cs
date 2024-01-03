@@ -53,15 +53,29 @@ namespace GameBuilderEditor
             [Tooltip("opens build folder in terminal if succeeded")]
             public bool openInTerminal;
 
+            [Tooltip("Instances to run if succeeded")]
+            public int instancesToRun;
+
+            [Tooltip("Whether or not to compress game files")]
+            public bool compressFiles;
+
             [Tooltip("{0}: full output path\n" +
                 "{1}: output directory path\n" +
                 "{2}: build version\n" +
-                "{3}: build number (from history)")]
+                "{3}: build number (from history)"+
+                "{4}: compression method file extension")]
+            public string compressFilePath;
+
+            [Tooltip("compression level for compressing the files.")]
+            public System.IO.Compression.CompressionLevel compressionLevel;
+
+            [Tooltip("{0}: full output path\n" +
+                "{1}: output directory path\n" +
+                "{2}: build version\n" +
+                "{3}: build number (from history)"+
+                "{4}: compression method file extension")]
             [TextArea(3, 10)]
             public string postBuildCommand;
-
-            [Tooltip("Instances to run if succeeded")]
-            public int instancesToRun;
 
             public string info
             {
