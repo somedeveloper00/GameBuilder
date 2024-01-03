@@ -91,6 +91,7 @@ namespace GameBuilderEditor
                             Thread.Sleep(1000);
                             Debug.Log(_remainingTimeForNewBuild);
                             _remainingTimeForNewBuild--;
+                            EditorApplication.delayCall += () => Repaint();
                         }
                         if (token.IsCancellationRequested)
                         {
@@ -98,6 +99,7 @@ namespace GameBuilderEditor
                             return;
                         }
                         _buildOnNextGui = true;
+                        EditorApplication.delayCall += () => Repaint();
                         return;
                     }
                 }
