@@ -398,10 +398,10 @@ namespace GameBuilderEditor
                 // compress
                 if (buildSettings.compressFiles)
                 {
-                    var files = Directory.GetFiles(fileInfo.Directory.FullName, "*/*", SearchOption.AllDirectories)
-                        .Where(f => f != "DoNotShip").ToArray();
                     try
                     {
+                        var files = Directory.GetFiles(fileInfo.Directory.FullName, "**", SearchOption.AllDirectories)
+                            .Where(f => !f.Contains("DoNotShip")).ToArray();
                         GameBuilderCompression.ZipFiles(files, compressedFilePath, buildSettings.compressionLevel);
                         Debug.LogFormat("successfully compressed into {0}", compressedFilePath);
                     }
