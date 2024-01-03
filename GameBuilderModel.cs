@@ -62,7 +62,7 @@ namespace GameBuilderEditor
             [Tooltip("{0}: full output path\n" +
                 "{1}: output directory path\n" +
                 "{2}: build version\n" +
-                "{3}: build number (from history)"+
+                "{3}: build number (from history)\n"+
                 "{4}: compression method file extension")]
             public string compressFilePath;
 
@@ -72,7 +72,7 @@ namespace GameBuilderEditor
             [Tooltip("{0}: full output path\n" +
                 "{1}: output directory path\n" +
                 "{2}: build version\n" +
-                "{3}: build number (from history)"+
+                "{3}: build number (from history)\n"+
                 "{4}: compression method file extension")]
             [TextArea(3, 10)]
             public string postBuildCommand;
