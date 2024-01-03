@@ -59,11 +59,13 @@ namespace GameBuilderEditor
             [Tooltip("Whether or not to compress game files")]
             public bool compressFiles;
 
-            [Tooltip("{0}: full output path\n" +
-                "{1}: output directory path\n" +
-                "{2}: build version\n" +
-                "{3}: build number (from history)\n"+
-                "{4}: compression method file extension")]
+            [Tooltip(
+                "{0}: platform name\n" +
+                "{1}: platform short name without uppercase and without space\n" +
+                "{2}: version\n" +
+                "{3}: platform-specific file extension\n" +
+                "{4}: build number (from history)\n"+
+                "{5}: compression method file extension")]
             public string compressFilePath;
 
             [Tooltip("compression level for compressing the files.")]

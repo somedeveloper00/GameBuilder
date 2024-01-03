@@ -272,6 +272,9 @@ namespace GameBuilderEditor
             {
                 EditorGUILayout.PropertyField(compressFilePathProp);
                 EditorGUILayout.PropertyField(compressionLevelProp);
+                var platformOptions = model.BuildingPlatform.GetOptions(model);
+                string compressedPath = model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length + 1);
+                EditorGUILayout.LabelField($"compresssed path: {compressedPath}");
             }
             EditorGUILayout.PropertyField(postBuildCommandProp, GUILayout.Height(100));
             EditorGUILayout.PropertyField(buildOptionsProp);
@@ -380,8 +383,7 @@ namespace GameBuilderEditor
 
                 var fileInfo = new FileInfo(r.summary.outputPath);
 
-                var compressedFilePath = string.Format(buildSettings.compressFilePath,
-                    fileInfo.FullName, fileInfo.Directory.FullName, Application.version, model.history.Length, "zip");
+                var compressedFilePath = model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length + 1);
 
                 // open in terminal
                 if (buildSettings.openInTerminal)
@@ -401,7 +403,8 @@ namespace GameBuilderEditor
                     try
                     {
                         var files = Directory.GetFiles(fileInfo.Directory.FullName, "**", SearchOption.AllDirectories)
-                            .Where(f => !f.Contains("DoNotShip")).ToArray();
+                            .Where(f => !f.Contains("DoNotShip"))
+                            .ToArray();
                         GameBuilderCompression.ZipFiles(files, compressedFilePath, buildSettings.compressionLevel);
                         Debug.LogFormat("successfully compressed into {0}", compressedFilePath);
                     }
@@ -582,6 +585,32 @@ namespace GameBuilderEditor
                         string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".apk", buildNumber),
                     _ => string.Empty
                 };
+            }
+            catch
+            {
+                return "invalid path";
+            }
+        }
+
+        public static string GetCompressedFilePath(this GameBuilderWindow.BuildingPlatform bp, GameBuilderModel.PlatformOptions ps, GameBuilderModel.BuildSettings bs, int buildNumber)
+        {
+            try
+            {
+                return bp switch
+                {
+                    GameBuilderWindow.BuildingPlatform.Windows =>
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".exe", buildNumber, ".zip"),
+                    GameBuilderWindow.BuildingPlatform.Windows_Server =>
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".exe", buildNumber, ".zip"),
+                    GameBuilderWindow.BuildingPlatform.Linux =>
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty, buildNumber, ".zip"),
+                    GameBuilderWindow.BuildingPlatform.Linux_Server =>
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty, buildNumber, ".zip"),
+                    GameBuilderWindow.BuildingPlatform.Android =>
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".apk", buildNumber, ".zip"),
+                    _ => string.Empty
+                };
+
             }
             catch
             {

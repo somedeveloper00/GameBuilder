@@ -19,12 +19,19 @@ namespace GameBuilderEditor
                 return;
             }
 
+            // rename any previous file with the same name
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+            }
+
             using var archive = ZipFile.Open(outputPath, ZipArchiveMode.Create);
+            var outDir = Path.GetDirectoryName(outputPath);
             foreach (var file in files)
             {
                 if (File.Exists(file))
                 {
-                    archive.CreateEntryFromFile(file, Path.GetFileName(file), compressionLevel);
+                    archive.CreateEntryFromFile(file, Path.GetRelativePath(outDir, file), compressionLevel);
                 }
             }
         }
