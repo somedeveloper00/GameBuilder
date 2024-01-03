@@ -137,7 +137,7 @@ namespace GameBuilderEditor
         {
             var process = new System.Diagnostics.Process();
             process.StartInfo.FileName = "git";
-            process.StartInfo.Arguments = "submodule update --init --recursive";
+            process.StartInfo.Arguments = "submodule update --remote";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             process.StartInfo.RedirectStandardOutput = true;
