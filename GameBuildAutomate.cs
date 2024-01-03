@@ -107,6 +107,7 @@ namespace GameBuilderEditor
         private bool BranchUpdated()
         {
             GitPull();
+            SyncSubmodules();
             var currentCommitHash = GetCommitHash();
             if (currentCommitHash != _lastCommitHash)
             {
@@ -121,10 +122,22 @@ namespace GameBuilderEditor
 
         private void GitPull()
         {
-            // perform git pull
             var process = new System.Diagnostics.Process();
             process.StartInfo.FileName = "git";
             process.StartInfo.Arguments = "pull";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.CreateNoWindow = true;
+            process.Start();
+            process.WaitForExit();
+        }
+
+        private void SyncSubmodules()
+        {
+            var process = new System.Diagnostics.Process();
+            process.StartInfo.FileName = "git";
+            process.StartInfo.Arguments = "submodule update --init --recursive";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             process.StartInfo.RedirectStandardOutput = true;
