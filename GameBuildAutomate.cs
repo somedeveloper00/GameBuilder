@@ -111,6 +111,7 @@ namespace GameBuilderEditor
             {
                 Debug.Log($"new commit detected: {_lastCommitHash} -> {currentCommitHash}");
                 _lastCommitHash = currentCommitHash;
+                AssetDatabase.Refresh();
                 return true;
             }
 
