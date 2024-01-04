@@ -108,6 +108,7 @@ namespace GameBuilderEditor
 
         private bool BranchUpdated()
         {
+            GitReset();
             GitPull();
             SyncSubmodules();
             var currentCommitHash = GetCommitHash();
