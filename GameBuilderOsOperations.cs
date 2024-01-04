@@ -34,9 +34,17 @@ namespace GameBuilderEditor
             }.Start();
         }
 
-        public static void ExecuteBatch(string path, string command)
+        public static string ExecuteBatch(string path, string command)
         {
-            Process.Start("cmd.exe", $"/k cd {path} && cd && {command}");
+            var proc = new Process();
+            proc.StartInfo.FileName = path;
+            proc.StartInfo.Arguments = command;
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.CreateNoWindow = true;
+            proc.Start();
+            return proc.StandardOutput.ReadToEnd();
         }
     }
 }

@@ -122,45 +122,25 @@ namespace GameBuilderEditor
             return false;
         }
 
+        private void GitReset()
+        {
+            GameBuilderOsOperations.ExecuteBatch("git", "reset --hard");
+        }
+
         private void GitPull()
         {
-            var process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = "git";
-            process.StartInfo.Arguments = "pull";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.CreateNoWindow = true;
-            process.Start();
-            process.WaitForExit();
+            GameBuilderOsOperations.ExecuteBatch("git", "pull");
         }
 
         private void SyncSubmodules()
         {
-            var process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = "git";
-            process.StartInfo.Arguments = "submodule update --remote";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.CreateNoWindow = true;
-            process.Start();
-            process.WaitForExit();
+            GameBuilderOsOperations.ExecuteBatch("git", "submodule update --remote");
         }
 
         private string GetCommitHash()
         {
-            // get current commit hash
-            var process = new System.Diagnostics.Process();
-            process.StartInfo.FileName = "git";
-            process.StartInfo.Arguments = "rev-parse HEAD";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.CreateNoWindow = true;
-            process.Start();
-            process.WaitForExit();
-            return process.StandardOutput.ReadToEnd().Trim();
+            return GameBuilderOsOperations.ExecuteBatch("git", "rev-parse HEAD")
+                .Trim();
         }
     }
 }
