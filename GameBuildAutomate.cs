@@ -125,22 +125,22 @@ namespace GameBuilderEditor
 
         private void GitReset()
         {
-            GameBuilderOsOperations.ExecuteBatch("git", "reset --hard");
+            GameBuilderOsOperations.ExecuteBatch("git reset --hard");
         }
 
         private void GitPull()
         {
-            GameBuilderOsOperations.ExecuteBatch("git", "pull");
+            GameBuilderOsOperations.ExecuteBatch("git pull");
         }
 
         private void SyncSubmodules()
         {
-            GameBuilderOsOperations.ExecuteBatch("git", "submodule update --remote");
+            GameBuilderOsOperations.ExecuteBatch("git submodule update --remote");
         }
 
         private string GetCommitHash()
         {
-            return GameBuilderOsOperations.ExecuteBatch("git", "rev-parse HEAD")
+            return GameBuilderOsOperations.ExecuteBatch("git rev-parse HEAD")
                 .Trim();
         }
     }

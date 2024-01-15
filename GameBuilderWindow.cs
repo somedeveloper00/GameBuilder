@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
-using WebSocketSharp;
 using Debug = UnityEngine.Debug;
 
 namespace GameBuilderEditor
@@ -422,7 +421,7 @@ namespace GameBuilderEditor
                     {
                         var cmd = string.Format(buildSettings.postBuildCommand, fileInfo.FullName, fileInfo.Directory.FullName,
                             Application.version, model.history.Length, "zip");
-                        GameBuilderOsOperations.ExecuteBatch(fileInfo.Directory.FullName, cmd);
+                        GameBuilderOsOperations.ExecuteBatch(cmd);
                     }
                     catch (Exception ex)
                     {
