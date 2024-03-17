@@ -14,7 +14,7 @@ namespace GameBuilderEditor
         public PlatformOptions windowsServer;
         public PlatformOptions linuxServer;
 
-        public BuildSettings[] buildSettings;
+        public BuildSettings[] buildSettings = Array.Empty<BuildSettings>();
         public BuildHistory[] history = Array.Empty<BuildHistory>();
 
         public int SelectedBuildSettingsIndex
