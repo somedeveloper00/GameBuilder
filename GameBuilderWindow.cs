@@ -1,15 +1,16 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace GameBuilderEditor
+namespace GameBuilder
 {
     public class GameBuilderWindow : EditorWindow
     {
@@ -92,7 +93,8 @@ namespace GameBuilderEditor
                         serializedObject = new(model);
                         if (serializedObject == null)
                         {
-                            Debug.LogWarningFormat("{0} could not create {1} from {2}", c_preLog, nameof(SerializedObject), nameof(model));
+                            Debug.LogWarningFormat("{0} could not create {1} from {2}", c_preLog, nameof(SerializedObject),
+                                nameof(model));
                             return;
                         }
                     }
@@ -149,11 +151,12 @@ namespace GameBuilderEditor
                         {
                             var preset = buildSettingsProp.GetArrayElementAtIndex(i);
 
-                            var height = Mathf.Max(30, EditorStyles.wordWrappedLabel.CalcHeight(new(model.buildSettings[i].label), 70));
+                            var height = Mathf.Max(30,
+                                EditorStyles.wordWrappedLabel.CalcHeight(new(model.buildSettings[i].label), 70));
 
                             var mainRect = EditorGUILayout.GetControlRect(GUILayout.Width(205), GUILayout.Height(height));
 
-                            if (model.SelectedBuildSettingsIndex == i)
+                            if (GameBuilderModel.SelectedBuildSettingsIndex == i)
                             {
                                 EditorGUI.DrawRect(mainRect, new(0, 0, 1, 0.2f));
                             }
@@ -163,7 +166,9 @@ namespace GameBuilderEditor
                             var rect = mainRect;
 
                             rect.width -= 20 + 20 + 40;
-                            EditorGUI.LabelField(rect, preset.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.label)).stringValue, EditorStyles.wordWrappedLabel);
+                            EditorGUI.LabelField(rect,
+                                preset.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.label)).stringValue,
+                                EditorStyles.wordWrappedLabel);
 
                             rect.height = 20;
                             rect.y = mainRect.y + (mainRect.height - rect.height) / 2f;
@@ -193,9 +198,10 @@ namespace GameBuilderEditor
                             }
 
                             // click
-                            if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && mainRect.Contains(Event.current.mousePosition))
+                            if (Event.current.type == EventType.MouseDown && Event.current.button == 0 &&
+                                mainRect.Contains(Event.current.mousePosition))
                             {
-                                model.SelectedBuildSettingsIndex = i;
+                                GameBuilderModel.SelectedBuildSettingsIndex = i;
                                 Repaint();
                             }
                         }
@@ -208,27 +214,31 @@ namespace GameBuilderEditor
                     }
                 }
 
-                model.SelectedBuildSettingsIndex = Mathf.Clamp(model.SelectedBuildSettingsIndex, 0, model.buildSettings.Length - 1);
+                GameBuilderModel.SelectedBuildSettingsIndex = Mathf.Clamp(GameBuilderModel.SelectedBuildSettingsIndex, 0,
+                    model.buildSettings.Length - 1);
 
                 // show selected preset
-                if (model.SelectedBuildSettingsIndex >= 0 && model.SelectedBuildSettingsIndex < buildSettingsProp.arraySize)
+                if (GameBuilderModel.SelectedBuildSettingsIndex >= 0 &&
+                    GameBuilderModel.SelectedBuildSettingsIndex < buildSettingsProp.arraySize)
                 {
                     using (new GUILayout.VerticalScope())
                     {
-                        DrawBuildSettings(model.SelectedBuildSettingsIndex);
+                        DrawBuildSettings(GameBuilderModel.SelectedBuildSettingsIndex);
                     }
                 }
             }
 
-            model.SelectedBuildSettingsIndex = Mathf.Clamp(model.SelectedBuildSettingsIndex, 0, model.buildSettings.Length - 1);
+            GameBuilderModel.SelectedBuildSettingsIndex =
+                Mathf.Clamp(GameBuilderModel.SelectedBuildSettingsIndex, 0, model.buildSettings.Length - 1);
             if (model.buildSettings.Length > 0)
             {
-                var buildSettings = model.buildSettings[model.SelectedBuildSettingsIndex];
+                var buildSettings = model.buildSettings[GameBuilderModel.SelectedBuildSettingsIndex];
 
                 using (new GUILayout.HorizontalScope(GUILayout.ExpandWidth(false)))
                 {
-                    var buildOptions = model.BuildingPlatform.GetOptions(model);
-                    string path = model.BuildingPlatform.GetBuildPath(buildOptions, buildSettings, model.history.Length + 1);
+                    var buildOptions = GameBuilderModel.BuildingPlatform.GetOptions(model);
+                    string path = GameBuilderModel.BuildingPlatform.GetBuildPath(buildOptions, buildSettings,
+                        model.history.Length + 1);
                     GUILayout.Label(path);
 
                     if (GUILayout.Button("Copy Full"))
@@ -239,11 +249,12 @@ namespace GameBuilderEditor
                         PlayerSettings.bundleVersion = EditorGUILayout.TextField("version", PlayerSettings.bundleVersion);
                 }
 
-                model.BuildingPlatform = (BuildingPlatform)EditorGUILayout.EnumPopup("Build Platform", model.BuildingPlatform);
+                GameBuilderModel.BuildingPlatform =
+                    (BuildingPlatform)EditorGUILayout.EnumPopup("Build Platform", GameBuilderModel.BuildingPlatform);
 
                 if (GUILayout.Button("Perform Build", GUILayout.Height(30), GUILayout.ExpandWidth(true)))
                 {
-                    PerformBuild_Business().ConfigureAwait(false);
+                    PerformBuild_Business(model, business, serializedObject, cts.Token).ConfigureAwait(false);
                 }
             }
         }
@@ -251,15 +262,19 @@ namespace GameBuilderEditor
         private void DrawBuildSettings(int index)
         {
             var buildSettings = model.buildSettings[index];
-            var buildSettingsProp = serializedObject.FindProperty(nameof(GameBuilderModel.buildSettings)).GetArrayElementAtIndex(index);
+            var buildSettingsProp = serializedObject.FindProperty(nameof(GameBuilderModel.buildSettings))
+                .GetArrayElementAtIndex(index);
             var labelProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.label));
             var buildOptionsProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildOptions));
             var openInTerminalProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.openInTerminal));
             var instancesToRunProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.instancesToRun));
-            var postBuildCommandProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.postBuildCommand));
+            var postBuildCommandProp =
+                buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.postBuildCommand));
             var compressFilesProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFiles));
-            var compressFilePathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFilePath));
-            var compressionLevelProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressionLevel));
+            var compressFilePathProp =
+                buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressFilePath));
+            var compressionLevelProp =
+                buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressionLevel));
             var buildPathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildPath));
 
             EditorGUILayout.PropertyField(labelProp);
@@ -271,8 +286,10 @@ namespace GameBuilderEditor
             {
                 EditorGUILayout.PropertyField(compressFilePathProp);
                 EditorGUILayout.PropertyField(compressionLevelProp);
-                var platformOptions = model.BuildingPlatform.GetOptions(model);
-                string compressedPath = model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length + 1);
+                var platformOptions = GameBuilderModel.BuildingPlatform.GetOptions(model);
+                string compressedPath =
+                    GameBuilderModel.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings,
+                        model.history.Length + 1);
                 EditorGUILayout.LabelField($"compresssed path: {compressedPath}");
             }
             EditorGUILayout.PropertyField(postBuildCommandProp, GUILayout.Height(100));
@@ -290,22 +307,25 @@ namespace GameBuilderEditor
             EditorGUILayout.PropertyField(prop);
         }
 
-        public async Task PerformBuild_Business()
+        public static async Task PerformBuild_Business(GameBuilderModel gameBuilderModel, List<Business> businesses = default,
+            SerializedObject windowSerializedObject = default, CancellationToken cancellationToken = default)
         {
-            if (model == null || model.buildSettings == null)
+            if (gameBuilderModel == null || gameBuilderModel.buildSettings == null)
             {
                 Debug.LogWarningFormat("{0}invalid model", c_preLog);
                 return;
             }
 
-            var buildSettings = model.buildSettings[model.SelectedBuildSettingsIndex];
+            var buildSettings = gameBuilderModel.buildSettings[GameBuilderModel.SelectedBuildSettingsIndex];
 
-            var platformOptions = model.BuildingPlatform.GetOptions(model);
-            var buildTarget = model.BuildingPlatform.GetBuildTarget();
-            var subTarget = model.BuildingPlatform.GetSubTarget();
-            var targetGroup = model.BuildingPlatform.GetTargetGroup();
-            var buildPath = model.BuildingPlatform.GetBuildPath(platformOptions, buildSettings, model.history.Length + 1);
-            if (platformOptions == null || (int)buildTarget == -1 || subTarget == -1 || (int)targetGroup == -1 || string.IsNullOrEmpty(buildPath))
+            var platformOptions = GameBuilderModel.BuildingPlatform.GetOptions(gameBuilderModel);
+            var buildTarget = GameBuilderModel.BuildingPlatform.GetBuildTarget();
+            var subTarget = GameBuilderModel.BuildingPlatform.GetSubTarget();
+            var targetGroup = GameBuilderModel.BuildingPlatform.GetTargetGroup();
+            var buildPath =
+                GameBuilderModel.BuildingPlatform.GetBuildPath(platformOptions, buildSettings, gameBuilderModel.history.Length + 1);
+            if (platformOptions == null || (int)buildTarget == -1 || subTarget == -1 || (int)targetGroup == -1 ||
+                string.IsNullOrEmpty(buildPath))
             {
                 Debug.LogWarningFormat("{0}invalid model", c_preLog);
                 return;
@@ -313,12 +333,9 @@ namespace GameBuilderEditor
 
             var performBuildBusiness = new Business()
             {
-                onGui = () =>
-                {
-                    GUILayout.Label("Building in progresss");
-                }
+                onGui = () => { GUILayout.Label("Building in progresss"); }
             };
-            business.Add(performBuildBusiness);
+            businesses?.Add(performBuildBusiness);
             var r = await PerformBuild(
                 buildOptions: buildSettings.buildOptions,
                 scenes: platformOptions.scenes.Select(s => AssetDatabase.GetAssetPath(s)).ToArray(),
@@ -326,10 +343,10 @@ namespace GameBuilderEditor
                 subTarget: subTarget,
                 targetGroup: targetGroup,
                 extraScriptingDefines: platformOptions.scriptingDefines,
-                buildPath: buildPath,
-                ct: cts.Token
+                buildPath: buildPath
             );
-            Debug.LogFormat("{0}build finished. \'{1}\' duration:\'{2} seconds\'", c_preLog, r.summary.result, r.summary.totalTime.TotalSeconds);
+            Debug.LogFormat("{0}build finished. \'{1}\' duration:\'{2} seconds\'", c_preLog, r.summary.result,
+                r.summary.totalTime.TotalSeconds);
 
             // log reports
             try
@@ -361,7 +378,8 @@ namespace GameBuilderEditor
 
             try
             {
-                Debug.LogFormat("{0}stripping info:\n{1}", c_preLog, JsonConvert.SerializeObject(r.strippingInfo, Formatting.Indented));
+                Debug.LogFormat("{0}stripping info:\n{1}", c_preLog,
+                    JsonConvert.SerializeObject(r.strippingInfo, Formatting.Indented));
             }
             catch (Exception ex)
             {
@@ -370,19 +388,21 @@ namespace GameBuilderEditor
 
 
             // post build
-            if (r.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
+            if (r.summary.result == BuildResult.Succeeded)
             {
-                serializedObject?.ApplyModifiedProperties();
-                Array.Resize(ref model.history, model.history.Length + 1);
-                model.history[^1] = new()
+                windowSerializedObject?.ApplyModifiedProperties();
+                Array.Resize(ref gameBuilderModel.history, gameBuilderModel.history.Length + 1);
+                gameBuilderModel.history[^1] = new()
                 {
                     size = r.summary.totalSize,
                 };
-                serializedObject?.Update();
+                windowSerializedObject?.Update();
 
                 var fileInfo = new FileInfo(r.summary.outputPath);
 
-                var compressedFilePath = model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length);
+                var compressedFilePath =
+                    GameBuilderModel.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings,
+                        gameBuilderModel.history.Length);
 
                 // open in terminal
                 if (buildSettings.openInTerminal)
@@ -420,7 +440,7 @@ namespace GameBuilderEditor
                     try
                     {
                         var cmd = string.Format(buildSettings.postBuildCommand, fileInfo.FullName, fileInfo.Directory.FullName,
-                            Application.version, model.history.Length, "zip");
+                            Application.version, gameBuilderModel.history.Length, "zip");
                         GameBuilderOsOperations.ExecuteBatch(cmd);
                     }
                     catch (Exception ex)
@@ -430,10 +450,11 @@ namespace GameBuilderEditor
                 }
             }
 
-            business.Remove(performBuildBusiness);
+            businesses?.Remove(performBuildBusiness);
         }
 
-        private async Task<UnityEditor.Build.Reporting.BuildReport> PerformBuild(BuildOptions buildOptions, string[] scenes, BuildTarget target, int subTarget, BuildTargetGroup targetGroup, string[] extraScriptingDefines, string buildPath, CancellationToken ct)
+        public static async Task<BuildReport> PerformBuild(BuildOptions buildOptions, string[] scenes,
+            BuildTarget target, int subTarget, BuildTargetGroup targetGroup, string[] extraScriptingDefines, string buildPath)
         {
             BuildPlayerOptions options = new()
             {
@@ -446,13 +467,15 @@ namespace GameBuilderEditor
                 locationPathName = buildPath
             };
             var result = BuildPipeline.BuildPlayer(options);
-            await Task.Yield();
+            if (!Application.isBatchMode)
+                await Task.Yield();
             return result;
         }
 
-        private async void CreateModel_Business()
+        public async void CreateModel_Business()
         {
-            var content = new GUIContent("Creating new model", $"creating an instance of {nameof(GameBuilderModel)} at {Path.Combine(c_modelDir_0, c_modelDir_1, c_modelFilename)}");
+            var content = new GUIContent("Creating new model",
+                $"creating an instance of {nameof(GameBuilderModel)} at {Path.Combine(c_modelDir_0, c_modelDir_1, c_modelFilename)}");
             Business createModelBusiness = new()
             {
                 onGui = () =>
@@ -470,7 +493,7 @@ namespace GameBuilderEditor
             business.Remove(createModelBusiness);
         }
 
-        private async Task<GameBuilderModel> CreateModel(CancellationToken ct)
+        public static async Task<GameBuilderModel> CreateModel(CancellationToken ct)
         {
             if (ct.IsCancellationRequested)
             {
@@ -501,7 +524,8 @@ namespace GameBuilderEditor
             }
 
             // error
-            Debug.LogWarningFormat("{0} error while fetching mode. retrying in {1} milliseconds", c_preLog, c_createModel_retryDelay);
+            Debug.LogWarningFormat("{0} error while fetching mode. retrying in {1} milliseconds", c_preLog,
+                c_createModel_retryDelay);
             AssetDatabase.Refresh();
             await Task.Delay(c_createModel_retryDelay, ct);
 
@@ -530,7 +554,8 @@ namespace GameBuilderEditor
 
     public static class BuildingPlatformExtensions
     {
-        public static GameBuilderModel.PlatformOptions GetOptions(this GameBuilderWindow.BuildingPlatform bp, GameBuilderModel model) => bp switch
+        public static GameBuilderModel.PlatformOptions GetOptions(this GameBuilderWindow.BuildingPlatform bp,
+            GameBuilderModel model) => bp switch
         {
             GameBuilderWindow.BuildingPlatform.Windows => model.windows,
             GameBuilderWindow.BuildingPlatform.Windows_Server => model.windowsServer,
@@ -539,6 +564,7 @@ namespace GameBuilderEditor
             GameBuilderWindow.BuildingPlatform.Android => model.android,
             _ => null
         };
+
         public static BuildTarget GetBuildTarget(this GameBuilderWindow.BuildingPlatform bp) => bp switch
         {
             GameBuilderWindow.BuildingPlatform.Windows => BuildTarget.StandaloneWindows64,
@@ -548,6 +574,7 @@ namespace GameBuilderEditor
             GameBuilderWindow.BuildingPlatform.Android => BuildTarget.Android,
             _ => (BuildTarget)(-1)
         };
+
         public static int GetSubTarget(this GameBuilderWindow.BuildingPlatform bp) => bp switch
         {
             GameBuilderWindow.BuildingPlatform.Windows => (int)StandaloneBuildSubtarget.Player,
@@ -557,6 +584,7 @@ namespace GameBuilderEditor
             GameBuilderWindow.BuildingPlatform.Android => 0,
             _ => -1
         };
+
         public static BuildTargetGroup GetTargetGroup(this GameBuilderWindow.BuildingPlatform bp) => bp switch
         {
             GameBuilderWindow.BuildingPlatform.Windows => BuildTargetGroup.Standalone,
@@ -566,22 +594,29 @@ namespace GameBuilderEditor
             GameBuilderWindow.BuildingPlatform.Android => BuildTargetGroup.Android,
             _ => (BuildTargetGroup)(-1)
         };
-        public static string GetBuildPath(this GameBuilderWindow.BuildingPlatform bp, GameBuilderModel.PlatformOptions ps, GameBuilderModel.BuildSettings bs, int buildNumber)
+
+        public static string GetBuildPath(this GameBuilderWindow.BuildingPlatform bp, GameBuilderModel.PlatformOptions ps,
+            GameBuilderModel.BuildSettings bs, int buildNumber)
         {
             try
             {
                 return bp switch
                 {
                     GameBuilderWindow.BuildingPlatform.Windows =>
-                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".exe", buildNumber),
+                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".exe",
+                            buildNumber),
                     GameBuilderWindow.BuildingPlatform.Windows_Server =>
-                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".exe", buildNumber),
+                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".exe",
+                            buildNumber),
                     GameBuilderWindow.BuildingPlatform.Linux =>
-                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, string.Empty, buildNumber),
+                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, string.Empty,
+                            buildNumber),
                     GameBuilderWindow.BuildingPlatform.Linux_Server =>
-                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, string.Empty, buildNumber),
+                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, string.Empty,
+                            buildNumber),
                     GameBuilderWindow.BuildingPlatform.Android =>
-                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".apk", buildNumber),
+                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".apk",
+                            buildNumber),
                     _ => string.Empty
                 };
             }
@@ -591,22 +626,28 @@ namespace GameBuilderEditor
             }
         }
 
-        public static string GetCompressedFilePath(this GameBuilderWindow.BuildingPlatform bp, GameBuilderModel.PlatformOptions ps, GameBuilderModel.BuildSettings bs, int buildNumber)
+        public static string GetCompressedFilePath(this GameBuilderWindow.BuildingPlatform bp, GameBuilderModel.PlatformOptions ps,
+            GameBuilderModel.BuildSettings bs, int buildNumber)
         {
             try
             {
                 return bp switch
                 {
                     GameBuilderWindow.BuildingPlatform.Windows =>
-                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".exe", buildNumber, ".zip"),
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".exe",
+                            buildNumber, ".zip"),
                     GameBuilderWindow.BuildingPlatform.Windows_Server =>
-                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".exe", buildNumber, ".zip"),
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".exe",
+                            buildNumber, ".zip"),
                     GameBuilderWindow.BuildingPlatform.Linux =>
-                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty, buildNumber, ".zip"),
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty,
+                            buildNumber, ".zip"),
                     GameBuilderWindow.BuildingPlatform.Linux_Server =>
-                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty, buildNumber, ".zip"),
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty,
+                            buildNumber, ".zip"),
                     GameBuilderWindow.BuildingPlatform.Android =>
-                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".apk", buildNumber, ".zip"),
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".apk",
+                            buildNumber, ".zip"),
                     _ => string.Empty
                 };
 

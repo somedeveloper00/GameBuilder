@@ -1,7 +1,7 @@
 using System.IO;
 using System.IO.Compression;
 
-namespace GameBuilderEditor
+namespace GameBuilder
 {
     /// <summary>
     /// Helper class for compressing files into an archive.
