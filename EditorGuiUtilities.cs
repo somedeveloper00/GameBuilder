@@ -1,7 +1,7 @@
 using System;
 using UnityEditor;
 
-namespace GameBuilder
+namespace GameBuilderEditor
 {
     public static class EditorGuiUtilities
     {

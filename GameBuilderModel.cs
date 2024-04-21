@@ -2,28 +2,30 @@
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using static GameBuilderEditor.GameBuilderWindow;
 
-namespace GameBuilder
+namespace GameBuilderEditor
 {
     public sealed class GameBuilderModel : ScriptableObject
     {
         public PlatformOptions android;
         public PlatformOptions windows;
         public PlatformOptions linux;
+        public PlatformOptions webgl;
         public PlatformOptions windowsServer;
         public PlatformOptions linuxServer;
 
-        public BuildSettings[] buildSettings = Array.Empty<BuildSettings>();
+        public BuildSettings[] buildSettings;
         public BuildHistory[] history = Array.Empty<BuildHistory>();
 
-        public static int SelectedBuildSettingsIndex
+        public int SelectedBuildSettingsIndex
         {
             get => EditorPrefs.GetInt("gamebuilder.selectedBuildSettingsIndex", 0);
             set => EditorPrefs.SetInt("gamebuilder.selectedBuildSettingsIndex", value);
         }
-        public static GameBuilderWindow.BuildingPlatform BuildingPlatform
+        public BuildingPlatform BuildingPlatform
         {
-            get => (GameBuilderWindow.BuildingPlatform)EditorPrefs.GetInt("gamebuilder.buildingPlatform", 0);
+            get => (BuildingPlatform)EditorPrefs.GetInt("gamebuilder.buildingPlatform", 0);
             set => EditorPrefs.SetInt("gamebuilder.buildingPlatform", (int)value);
         }
 
@@ -71,10 +73,10 @@ namespace GameBuilder
             public System.IO.Compression.CompressionLevel compressionLevel;
 
             [Tooltip("{0}: full output path\n" +
-                     "{1}: output directory path\n" +
-                     "{2}: build version\n" +
-                     "{3}: build number (from history)\n"+
-                     "{4}: compression method file extension")]
+                "{1}: output directory path\n" +
+                "{2}: build version\n" +
+                "{3}: build number (from history)\n"+
+                "{4}: compression method file extension")]
             [TextArea(3, 10)]
             public string postBuildCommand;
 
@@ -152,9 +154,9 @@ namespace GameBuilder
             public ulong size;
         }
     }
+}
 
-    public static class BuildOptionsExtension
-    {
-        public static bool ContainsFast(this BuildOptions self, BuildOptions other) => (self & other) == other;
-    }
+public static class BuildOptionsExtension
+{
+    public static bool ContainsFast(this BuildOptions self, BuildOptions other) => (self & other) == other;
 }

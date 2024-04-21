@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace GameBuilder
+namespace GameBuilderEditor
 {
     public static class GameBuilderOsOperations
     {

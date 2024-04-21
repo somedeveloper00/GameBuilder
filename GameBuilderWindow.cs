@@ -10,7 +10,7 @@ using UnityEditor.Build.Reporting;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace GameBuilder
+namespace GameBuilderEditor
 {
     public class GameBuilderWindow : EditorWindow
     {
@@ -38,7 +38,8 @@ namespace GameBuilder
             new("Windows\nServer"),
             new("Linux"),
             new("Linux\nServer"),
-            new("Android")
+            new("Android"),
+            new("WebGL")
         };
 
         private int _selectedEditingPlatformIndex;
@@ -109,6 +110,7 @@ namespace GameBuilder
                         2 => serializedObject.FindProperty(nameof(model.linux)),
                         3 => serializedObject.FindProperty(nameof(model.linuxServer)),
                         4 => serializedObject.FindProperty(nameof(model.android)),
+                        5 => serializedObject.FindProperty(nameof(model.webgl)),
                         _ => serializedObject.FindProperty(nameof(model.windows)),
                     };
 
@@ -156,7 +158,7 @@ namespace GameBuilder
 
                             var mainRect = EditorGUILayout.GetControlRect(GUILayout.Width(205), GUILayout.Height(height));
 
-                            if (GameBuilderModel.SelectedBuildSettingsIndex == i)
+                            if (model.SelectedBuildSettingsIndex == i)
                             {
                                 EditorGUI.DrawRect(mainRect, new(0, 0, 1, 0.2f));
                             }
@@ -201,7 +203,7 @@ namespace GameBuilder
                             if (Event.current.type == EventType.MouseDown && Event.current.button == 0 &&
                                 mainRect.Contains(Event.current.mousePosition))
                             {
-                                GameBuilderModel.SelectedBuildSettingsIndex = i;
+                                model.SelectedBuildSettingsIndex = i;
                                 Repaint();
                             }
                         }
@@ -214,31 +216,27 @@ namespace GameBuilder
                     }
                 }
 
-                GameBuilderModel.SelectedBuildSettingsIndex = Mathf.Clamp(GameBuilderModel.SelectedBuildSettingsIndex, 0,
-                    model.buildSettings.Length - 1);
+                model.SelectedBuildSettingsIndex = Mathf.Clamp(model.SelectedBuildSettingsIndex, 0, model.buildSettings.Length - 1);
 
                 // show selected preset
-                if (GameBuilderModel.SelectedBuildSettingsIndex >= 0 &&
-                    GameBuilderModel.SelectedBuildSettingsIndex < buildSettingsProp.arraySize)
+                if (model.SelectedBuildSettingsIndex >= 0 && model.SelectedBuildSettingsIndex < buildSettingsProp.arraySize)
                 {
                     using (new GUILayout.VerticalScope())
                     {
-                        DrawBuildSettings(GameBuilderModel.SelectedBuildSettingsIndex);
+                        DrawBuildSettings(model.SelectedBuildSettingsIndex);
                     }
                 }
             }
 
-            GameBuilderModel.SelectedBuildSettingsIndex =
-                Mathf.Clamp(GameBuilderModel.SelectedBuildSettingsIndex, 0, model.buildSettings.Length - 1);
+            model.SelectedBuildSettingsIndex = Mathf.Clamp(model.SelectedBuildSettingsIndex, 0, model.buildSettings.Length - 1);
             if (model.buildSettings.Length > 0)
             {
-                var buildSettings = model.buildSettings[GameBuilderModel.SelectedBuildSettingsIndex];
+                var buildSettings = model.buildSettings[model.SelectedBuildSettingsIndex];
 
                 using (new GUILayout.HorizontalScope(GUILayout.ExpandWidth(false)))
                 {
-                    var buildOptions = GameBuilderModel.BuildingPlatform.GetOptions(model);
-                    string path = GameBuilderModel.BuildingPlatform.GetBuildPath(buildOptions, buildSettings,
-                        model.history.Length + 1);
+                    var buildOptions = model.BuildingPlatform.GetOptions(model);
+                    string path = model.BuildingPlatform.GetBuildPath(buildOptions, buildSettings, model.history.Length + 1);
                     GUILayout.Label(path);
 
                     if (GUILayout.Button("Copy Full"))
@@ -249,12 +247,11 @@ namespace GameBuilder
                         PlayerSettings.bundleVersion = EditorGUILayout.TextField("version", PlayerSettings.bundleVersion);
                 }
 
-                GameBuilderModel.BuildingPlatform =
-                    (BuildingPlatform)EditorGUILayout.EnumPopup("Build Platform", GameBuilderModel.BuildingPlatform);
+                model.BuildingPlatform = (BuildingPlatform)EditorGUILayout.EnumPopup("Build Platform", model.BuildingPlatform);
 
                 if (GUILayout.Button("Perform Build", GUILayout.Height(30), GUILayout.ExpandWidth(true)))
                 {
-                    PerformBuild_Business(model, business, serializedObject, cts.Token).ConfigureAwait(false);
+                    PerformBuild_Business().ConfigureAwait(false);
                 }
             }
         }
@@ -286,10 +283,9 @@ namespace GameBuilder
             {
                 EditorGUILayout.PropertyField(compressFilePathProp);
                 EditorGUILayout.PropertyField(compressionLevelProp);
-                var platformOptions = GameBuilderModel.BuildingPlatform.GetOptions(model);
+                var platformOptions = model.BuildingPlatform.GetOptions(model);
                 string compressedPath =
-                    GameBuilderModel.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings,
-                        model.history.Length + 1);
+                    model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length + 1);
                 EditorGUILayout.LabelField($"compresssed path: {compressedPath}");
             }
             EditorGUILayout.PropertyField(postBuildCommandProp, GUILayout.Height(100));
@@ -307,23 +303,21 @@ namespace GameBuilder
             EditorGUILayout.PropertyField(prop);
         }
 
-        public static async Task PerformBuild_Business(GameBuilderModel gameBuilderModel, List<Business> businesses = default,
-            SerializedObject windowSerializedObject = default, CancellationToken cancellationToken = default)
+        public async Task PerformBuild_Business()
         {
-            if (gameBuilderModel == null || gameBuilderModel.buildSettings == null)
+            if (model == null || model.buildSettings == null)
             {
                 Debug.LogWarningFormat("{0}invalid model", c_preLog);
                 return;
             }
 
-            var buildSettings = gameBuilderModel.buildSettings[GameBuilderModel.SelectedBuildSettingsIndex];
+            var buildSettings = model.buildSettings[model.SelectedBuildSettingsIndex];
 
-            var platformOptions = GameBuilderModel.BuildingPlatform.GetOptions(gameBuilderModel);
-            var buildTarget = GameBuilderModel.BuildingPlatform.GetBuildTarget();
-            var subTarget = GameBuilderModel.BuildingPlatform.GetSubTarget();
-            var targetGroup = GameBuilderModel.BuildingPlatform.GetTargetGroup();
-            var buildPath =
-                GameBuilderModel.BuildingPlatform.GetBuildPath(platformOptions, buildSettings, gameBuilderModel.history.Length + 1);
+            var platformOptions = model.BuildingPlatform.GetOptions(model);
+            var buildTarget = model.BuildingPlatform.GetBuildTarget();
+            var subTarget = model.BuildingPlatform.GetSubTarget();
+            var targetGroup = model.BuildingPlatform.GetTargetGroup();
+            var buildPath = model.BuildingPlatform.GetBuildPath(platformOptions, buildSettings, model.history.Length + 1);
             if (platformOptions == null || (int)buildTarget == -1 || subTarget == -1 || (int)targetGroup == -1 ||
                 string.IsNullOrEmpty(buildPath))
             {
@@ -335,7 +329,7 @@ namespace GameBuilder
             {
                 onGui = () => { GUILayout.Label("Building in progresss"); }
             };
-            businesses?.Add(performBuildBusiness);
+            business.Add(performBuildBusiness);
             var r = await PerformBuild(
                 buildOptions: buildSettings.buildOptions,
                 scenes: platformOptions.scenes.Select(s => AssetDatabase.GetAssetPath(s)).ToArray(),
@@ -390,19 +384,18 @@ namespace GameBuilder
             // post build
             if (r.summary.result == BuildResult.Succeeded)
             {
-                windowSerializedObject?.ApplyModifiedProperties();
-                Array.Resize(ref gameBuilderModel.history, gameBuilderModel.history.Length + 1);
-                gameBuilderModel.history[^1] = new()
+                serializedObject?.ApplyModifiedProperties();
+                Array.Resize(ref model.history, model.history.Length + 1);
+                model.history[^1] = new()
                 {
                     size = r.summary.totalSize,
                 };
-                windowSerializedObject?.Update();
+                serializedObject?.Update();
 
                 var fileInfo = new FileInfo(r.summary.outputPath);
 
                 var compressedFilePath =
-                    GameBuilderModel.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings,
-                        gameBuilderModel.history.Length);
+                    model.BuildingPlatform.GetCompressedFilePath(platformOptions, buildSettings, model.history.Length);
 
                 // open in terminal
                 if (buildSettings.openInTerminal)
@@ -440,7 +433,7 @@ namespace GameBuilder
                     try
                     {
                         var cmd = string.Format(buildSettings.postBuildCommand, fileInfo.FullName, fileInfo.Directory.FullName,
-                            Application.version, gameBuilderModel.history.Length, "zip");
+                            Application.version, model.history.Length, "zip");
                         GameBuilderOsOperations.ExecuteBatch(cmd);
                     }
                     catch (Exception ex)
@@ -450,10 +443,10 @@ namespace GameBuilder
                 }
             }
 
-            businesses?.Remove(performBuildBusiness);
+            business.Remove(performBuildBusiness);
         }
 
-        public static async Task<BuildReport> PerformBuild(BuildOptions buildOptions, string[] scenes,
+        private async Task<BuildReport> PerformBuild(BuildOptions buildOptions, string[] scenes,
             BuildTarget target, int subTarget, BuildTargetGroup targetGroup, string[] extraScriptingDefines, string buildPath)
         {
             BuildPlayerOptions options = new()
@@ -467,12 +460,11 @@ namespace GameBuilder
                 locationPathName = buildPath
             };
             var result = BuildPipeline.BuildPlayer(options);
-            if (!Application.isBatchMode)
-                await Task.Yield();
+            await Task.Yield();
             return result;
         }
 
-        public async void CreateModel_Business()
+        private async void CreateModel_Business()
         {
             var content = new GUIContent("Creating new model",
                 $"creating an instance of {nameof(GameBuilderModel)} at {Path.Combine(c_modelDir_0, c_modelDir_1, c_modelFilename)}");
@@ -493,7 +485,7 @@ namespace GameBuilder
             business.Remove(createModelBusiness);
         }
 
-        public static async Task<GameBuilderModel> CreateModel(CancellationToken ct)
+        private async Task<GameBuilderModel> CreateModel(CancellationToken ct)
         {
             if (ct.IsCancellationRequested)
             {
@@ -548,7 +540,8 @@ namespace GameBuilder
             Windows_Server,
             Linux,
             Linux_Server,
-            Android
+            Android,
+            WebGL
         }
     }
 
@@ -556,14 +549,15 @@ namespace GameBuilder
     {
         public static GameBuilderModel.PlatformOptions GetOptions(this GameBuilderWindow.BuildingPlatform bp,
             GameBuilderModel model) => bp switch
-        {
-            GameBuilderWindow.BuildingPlatform.Windows => model.windows,
-            GameBuilderWindow.BuildingPlatform.Windows_Server => model.windowsServer,
-            GameBuilderWindow.BuildingPlatform.Linux => model.linux,
-            GameBuilderWindow.BuildingPlatform.Linux_Server => model.linuxServer,
-            GameBuilderWindow.BuildingPlatform.Android => model.android,
-            _ => null
-        };
+            {
+                GameBuilderWindow.BuildingPlatform.Windows => model.windows,
+                GameBuilderWindow.BuildingPlatform.Windows_Server => model.windowsServer,
+                GameBuilderWindow.BuildingPlatform.Linux => model.linux,
+                GameBuilderWindow.BuildingPlatform.Linux_Server => model.linuxServer,
+                GameBuilderWindow.BuildingPlatform.Android => model.android,
+                GameBuilderWindow.BuildingPlatform.WebGL => model.webgl,
+                _ => null
+            };
 
         public static BuildTarget GetBuildTarget(this GameBuilderWindow.BuildingPlatform bp) => bp switch
         {
@@ -572,6 +566,7 @@ namespace GameBuilder
             GameBuilderWindow.BuildingPlatform.Linux => BuildTarget.StandaloneLinux64,
             GameBuilderWindow.BuildingPlatform.Linux_Server => BuildTarget.StandaloneLinux64,
             GameBuilderWindow.BuildingPlatform.Android => BuildTarget.Android,
+            GameBuilderWindow.BuildingPlatform.WebGL => BuildTarget.WebGL,
             _ => (BuildTarget)(-1)
         };
 
@@ -582,6 +577,7 @@ namespace GameBuilder
             GameBuilderWindow.BuildingPlatform.Linux => (int)StandaloneBuildSubtarget.Player,
             GameBuilderWindow.BuildingPlatform.Linux_Server => (int)StandaloneBuildSubtarget.Server,
             GameBuilderWindow.BuildingPlatform.Android => 0,
+            GameBuilderWindow.BuildingPlatform.WebGL => 0,
             _ => -1
         };
 
@@ -592,6 +588,7 @@ namespace GameBuilder
             GameBuilderWindow.BuildingPlatform.Linux => BuildTargetGroup.Standalone,
             GameBuilderWindow.BuildingPlatform.Linux_Server => BuildTargetGroup.Standalone,
             GameBuilderWindow.BuildingPlatform.Android => BuildTargetGroup.Android,
+            GameBuilderWindow.BuildingPlatform.WebGL => BuildTargetGroup.WebGL,
             _ => (BuildTargetGroup)(-1)
         };
 
@@ -616,6 +613,9 @@ namespace GameBuilder
                             buildNumber),
                     GameBuilderWindow.BuildingPlatform.Android =>
                         string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, ".apk",
+                            buildNumber),
+                    GameBuilderWindow.BuildingPlatform.WebGL =>
+                        string.Format(bs.buildPath, ps.platformName, ps.platformShortName, Application.version, string.Empty,
                             buildNumber),
                     _ => string.Empty
                 };
@@ -648,9 +648,11 @@ namespace GameBuilder
                     GameBuilderWindow.BuildingPlatform.Android =>
                         string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, ".apk",
                             buildNumber, ".zip"),
+                    GameBuilderWindow.BuildingPlatform.WebGL =>
+                        string.Format(bs.compressFilePath, ps.platformName, ps.platformShortName, Application.version, string.Empty,
+                            buildNumber, ".zip"),
                     _ => string.Empty
                 };
-
             }
             catch
             {
