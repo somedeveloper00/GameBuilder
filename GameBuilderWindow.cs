@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SearchService;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -42,7 +43,6 @@ namespace GameBuilderEditor
             new("WebGL")
         };
 
-        private int _selectedEditingPlatformIndex;
         private Vector2 _infoScrollPos;
         private Vector2 _mainScrollPos;
         private Vector2 _buildSettingsPresets_scrollPos;
@@ -103,14 +103,14 @@ namespace GameBuilderEditor
                     // serializedObject is good here
 
                     serializedObject.Update();
-                    _selectedEditingPlatformIndex = GUILayout.SelectionGrid(_selectedEditingPlatformIndex, s_platformContents, 6);
-                    var prop = _selectedEditingPlatformIndex switch
+                    model.BuildingPlatform = (BuildingPlatform)GUILayout.SelectionGrid((int)model.BuildingPlatform, s_platformContents, 6);
+                    var prop = model.BuildingPlatform switch
                     {
-                        1 => serializedObject.FindProperty(nameof(model.windowsServer)),
-                        2 => serializedObject.FindProperty(nameof(model.linux)),
-                        3 => serializedObject.FindProperty(nameof(model.linuxServer)),
-                        4 => serializedObject.FindProperty(nameof(model.android)),
-                        5 => serializedObject.FindProperty(nameof(model.webgl)),
+                        BuildingPlatform.Windows_Server => serializedObject.FindProperty(nameof(model.windowsServer)),
+                        BuildingPlatform.Linux => serializedObject.FindProperty(nameof(model.linux)),
+                        BuildingPlatform.Linux_Server => serializedObject.FindProperty(nameof(model.linuxServer)),
+                        BuildingPlatform.Android => serializedObject.FindProperty(nameof(model.android)),
+                        BuildingPlatform.WebGL => serializedObject.FindProperty(nameof(model.webgl)),
                         _ => serializedObject.FindProperty(nameof(model.windows)),
                     };
 
@@ -247,7 +247,15 @@ namespace GameBuilderEditor
                         PlayerSettings.bundleVersion = EditorGUILayout.TextField("version", PlayerSettings.bundleVersion);
                 }
 
-                model.BuildingPlatform = (BuildingPlatform)EditorGUILayout.EnumPopup("Build Platform", model.BuildingPlatform);
+                if (model.BuildingPlatform == BuildingPlatform.Android &&
+                    !model.buildSettings[model.SelectedBuildSettingsIndex].buildOptions.ContainsFast(BuildOptions.Development))
+                {
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        PlayerSettings.Android.keystorePass = EditorGUILayout.PasswordField("Keystore Password", PlayerSettings.Android.keystorePass);
+                        PlayerSettings.Android.keyaliasPass = EditorGUILayout.PasswordField("Key Alias Password", PlayerSettings.Android.keyaliasPass);
+                    }
+                }
 
                 if (GUILayout.Button("Perform Build", GUILayout.Height(30), GUILayout.ExpandWidth(true)))
                 {
@@ -457,7 +465,7 @@ namespace GameBuilderEditor
                 subtarget = subTarget,
                 targetGroup = targetGroup,
                 extraScriptingDefines = extraScriptingDefines,
-                locationPathName = buildPath
+                locationPathName = buildPath,
             };
             var result = BuildPipeline.BuildPlayer(options);
             await Task.Yield();
