@@ -2,53 +2,27 @@
 using System.Text;
 using UnityEditor;
 using UnityEngine;
-using static GameBuilderEditor.GameBuilderWindow;
 
 namespace GameBuilderEditor
 {
     public sealed class GameBuilderModel : ScriptableObject
     {
-        public PlatformOptions android;
-        public PlatformOptions windows;
-        public PlatformOptions linux;
-        public PlatformOptions webgl;
-        public PlatformOptions windowsServer;
-        public PlatformOptions linuxServer;
-
         public BuildSettings[] buildSettings;
-        public BuildHistory[] history = Array.Empty<BuildHistory>();
-
-        public int SelectedBuildSettingsIndex
-        {
-            get => EditorPrefs.GetInt("gamebuilder.selectedBuildSettingsIndex", 0);
-            set => EditorPrefs.SetInt("gamebuilder.selectedBuildSettingsIndex", value);
-        }
-        public BuildingPlatform BuildingPlatform
-        {
-            get => (BuildingPlatform)EditorPrefs.GetInt("gamebuilder.buildingPlatform", 0);
-            set => EditorPrefs.SetInt("gamebuilder.buildingPlatform", (int)value);
-        }
-
-        [Serializable]
-        public class PlatformOptions
-        {
-            public string platformName;
-            public string platformShortName;
-            public SceneAsset[] scenes;
-            public string[] scriptingDefines;
-        }
 
         [Serializable]
         public class BuildSettings
         {
+            public BuildingPlatform buildingPlatform;
+            public SceneAsset[] scenes;
+            public string[] scriptingDefines;
+
             [Tooltip(
-                "{0}: platform name\n" +
-                "{1}: platform short name without uppercase and without space\n" +
-                "{2}: version\n" +
-                "{3}: platform-specific file extension\n" +
-                "{4}: build number (from history)")]
-            public string buildPath = "Builds/{0}/{1}_{2}/app{3}";
+                "{0}: version\n" +
+                "{1}: platform-specific file extension")]
+            public string buildPath = "Builds/{0}/Game{1}";
+
             public string label = "New Settings";
+
             public BuildOptions buildOptions;
 
             [Tooltip("opens build folder in terminal if succeeded")]
@@ -61,26 +35,15 @@ namespace GameBuilderEditor
             public bool compressFiles;
 
             [Tooltip(
-                "{0}: platform name\n" +
-                "{1}: platform short name without uppercase and without space\n" +
-                "{2}: version\n" +
-                "{3}: platform-specific file extension\n" +
-                "{4}: build number (from history)\n"+
-                "{5}: compression method file extension")]
+                "{0}: version\n" +
+                "{1}: platform-specific file extension\n" +
+                "{2}: compression method file extension")]
             public string compressFilePath;
 
             [Tooltip("compression level for compressing the files.")]
             public System.IO.Compression.CompressionLevel compressionLevel;
 
-            [Tooltip("{0}: full output path\n" +
-                "{1}: output directory path\n" +
-                "{2}: build version\n" +
-                "{3}: build number (from history)\n"+
-                "{4}: compression method file extension")]
-            [TextArea(3, 10)]
-            public string postBuildCommand;
-
-            public string info
+            public string Info
             {
                 get
                 {
@@ -142,21 +105,24 @@ namespace GameBuilderEditor
                     if (buildOptions.ContainsFast(BuildOptions.ShaderLivelinkSupport))
                         sb.AppendLine("ShaderLivelinkSupport:\n    Enable Shader Livelink support.");
 
-
                     return sb.ToString();
                 }
             }
         }
-
-        [Serializable]
-        public class BuildHistory
-        {
-            public ulong size;
-        }
     }
-}
 
-public static class BuildOptionsExtension
-{
-    public static bool ContainsFast(this BuildOptions self, BuildOptions other) => (self & other) == other;
+    public enum BuildingPlatform
+    {
+        Windows,
+        WindowsServer,
+        Linux,
+        LinuxServer,
+        Android,
+        WebGL
+    }
+
+    public static class BuildOptionsExtension
+    {
+        public static bool ContainsFast(this BuildOptions self, BuildOptions other) => (self & other) == other;
+    }
 }
