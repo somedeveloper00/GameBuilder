@@ -7,7 +7,7 @@ namespace GameBuilderEditor
 {
     public sealed class GameBuilderModel : ScriptableObject
     {
-        public BuildSettings[] buildSettings;
+        public BuildSettings[] buildSettings = Array.Empty<BuildSettings>();
 
         [Serializable]
         public class BuildSettings

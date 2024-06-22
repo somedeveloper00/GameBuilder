@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -18,6 +17,7 @@ namespace GameBuilderEditor
         private static void OpenWindow()
         {
             var window = GetWindow<GameBuilderWindow>(c_useUtilityWindow, "Game Builder");
+            window.minSize = new(600, 400);
             window.Show();
         }
 
@@ -320,45 +320,6 @@ namespace GameBuilderEditor
             Debug.LogFormat("{0}build finished. \'{1}\' duration:\'{2} seconds\'", c_preLog, r.summary.result,
                 r.summary.totalTime.TotalSeconds);
 
-            // log reports
-            try
-            {
-                Debug.LogFormat("{0}summery:\n{1}", c_preLog, JsonConvert.SerializeObject(r.summary, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-
-            try
-            {
-                Debug.LogFormat("{0}steps:\n{1}", c_preLog, JsonConvert.SerializeObject(r.steps, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-
-            try
-            {
-                Debug.LogFormat("{0}files:\n{1}", c_preLog, JsonConvert.SerializeObject(r.GetFiles(), Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-
-            try
-            {
-                Debug.LogFormat("{0}stripping info:\n{1}", c_preLog,
-                    JsonConvert.SerializeObject(r.strippingInfo, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-
-
             // post build
             if (r.summary.result == BuildResult.Succeeded)
             {
@@ -382,7 +343,7 @@ namespace GameBuilderEditor
                 {
                     try
                     {
-                        var files = Directory.GetFiles(fileInfo.Directory.FullName, "**", SearchOption.AllDirectories)
+                        var files = Directory.GetFiles(fileInfo.Directory.FullName, "*.*", SearchOption.AllDirectories)
                             .Where(f => !f.Contains("DoNotShip"))
                             .ToArray();
                         GameBuilderCompression.ZipFiles(files, compressedFilePath, buildSettings.compressionLevel);
