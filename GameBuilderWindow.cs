@@ -149,7 +149,7 @@ namespace GameBuilderEditor
 
                         if (SelectedBuildSettingsIndex == i)
                         {
-                            EditorGUI.DrawRect(mainRect, new(0, 0, 1, 0.2f));
+                            EditorGUI.DrawRect(mainRect, new(0, 0, 1, 0.5f));
                         }
 
                         mainRect.x += 6;
@@ -209,11 +209,13 @@ namespace GameBuilderEditor
         private void DrawBuildSettingsConfiguration(int index)
         {
             var buildSettings = model.buildSettings[index];
-            var buildSettingsProp = serializedObject.FindProperty(nameof(GameBuilderModel.buildSettings)).GetArrayElementAtIndex(index);
+            var buildSettingsProp =
+                serializedObject.FindProperty(nameof(GameBuilderModel.buildSettings))
+                .GetArrayElementAtIndex(index);
+            var labelProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.label));
             var buildingPlatformProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildingPlatform));
             var scenesProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.scenes));
             var scriptingDefinesProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.scriptingDefines));
-            var labelProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.label));
             var buildOptionsProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildOptions));
             var openInTerminalProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.openInTerminal));
             var instancesToRunProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.instancesToRun));
@@ -222,10 +224,13 @@ namespace GameBuilderEditor
             var compressionLevelProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.compressionLevel));
             var buildPathProp = buildSettingsProp.FindPropertyRelative(nameof(GameBuilderModel.BuildSettings.buildPath));
 
-            EditorGUILayout.PropertyField(buildingPlatformProp);
-            EditorGUILayout.PropertyField(scenesProp);
-            EditorGUILayout.PropertyField(scriptingDefinesProp);
             EditorGUILayout.PropertyField(labelProp);
+            EditorGUILayout.PropertyField(buildingPlatformProp);
+            using (new GUILayout.HorizontalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.PropertyField(scenesProp);
+                EditorGUILayout.PropertyField(scriptingDefinesProp);
+            }
             EditorGUILayout.PropertyField(openInTerminalProp);
             EditorGUILayout.PropertyField(instancesToRunProp);
             EditorGUILayout.PropertyField(buildPathProp);
@@ -235,7 +240,7 @@ namespace GameBuilderEditor
                 EditorGUILayout.PropertyField(compressFilePathProp);
                 EditorGUILayout.PropertyField(compressionLevelProp);
                 string compressedPath = buildSettings.GetCompressedFilePath();
-                EditorGUILayout.LabelField($"compresssed path: {compressedPath}");
+                EditorGUILayout.LabelField($"compressed path: {compressedPath}");
             }
             EditorGUILayout.PropertyField(buildOptionsProp);
             using var scroll = new GUILayout.ScrollViewScope(_infoScrollPos);
@@ -258,12 +263,21 @@ namespace GameBuilderEditor
                     string path = buildSettings.GetBuildPath();
                     GUILayout.Label(path);
 
-                    if (GUILayout.Button("Copy Full"))
+                    if (GUILayout.Button("Copy Full", GUILayout.Width(80)))
                     {
                         GUIUtility.systemCopyBuffer = Path.GetFullPath(path);
                     }
-                    using (new EditorGuiUtilities.LabelWidth(70))
+
+                    using (new EditorGuiUtilities.LabelWidth(60))
                         PlayerSettings.bundleVersion = EditorGUILayout.TextField("version", PlayerSettings.bundleVersion);
+                    if (GUILayout.Button("↑", GUILayout.Width(15)))
+                    {
+                        PlayerSettings.bundleVersion = StringUtils.IncrementIntegerInString(PlayerSettings.bundleVersion, 1);
+                    }
+                    if (GUILayout.Button("↓", GUILayout.Width(15)))
+                    {
+                        PlayerSettings.bundleVersion = StringUtils.IncrementIntegerInString(PlayerSettings.bundleVersion, -1);
+                    }
                 }
 
                 if (buildSettings.buildingPlatform == BuildingPlatform.Android &&
@@ -276,10 +290,31 @@ namespace GameBuilderEditor
                     }
                 }
 
-                if (GUILayout.Button("Perform Build", GUILayout.Height(30), GUILayout.ExpandWidth(true)))
+                using (new GUILayout.HorizontalScope())
                 {
-                    PerformBuild_Business().ConfigureAwait(false);
+                    if (GUILayout.Button("Perform Build", GUILayout.Height(30), GUILayout.ExpandWidth(true)))
+                    {
+                        PerformBuild_Business().ConfigureAwait(false);
+                    }
+                    if (GUILayout.Button("Clean", GUILayout.Height(30), GUILayout.Width(50)))
+                    {
+                        CleanBuildDirectory();
+                    }
                 }
+            }
+        }
+
+        private void CleanBuildDirectory()
+        {
+            var buildSettings = model.buildSettings[SelectedBuildSettingsIndex];
+            var buildPath = buildSettings.GetBuildPath();
+            if (Directory.Exists(buildPath))
+            {
+                Directory.Delete(buildPath, true);
+            }
+            else if (File.Exists(buildPath))
+            {
+                File.Delete(buildPath);
             }
         }
 
@@ -317,8 +352,12 @@ namespace GameBuilderEditor
                 extraScriptingDefines: buildSettings.scriptingDefines,
                 buildPath: buildPath
             );
-            Debug.LogFormat("{0}build finished. \'{1}\' duration:\'{2} seconds\'", c_preLog, r.summary.result,
+
+            if (r != null)
+            {
+                Debug.LogFormat("{0}build finished. \'{1}\' duration:\'{2} seconds\'", c_preLog, r.summary.result,
                 r.summary.totalTime.TotalSeconds);
+            }
 
             // post build
             if (r.summary.result == BuildResult.Succeeded)
@@ -373,6 +412,11 @@ namespace GameBuilderEditor
                 extraScriptingDefines = extraScriptingDefines,
                 locationPathName = buildPath,
             };
+            if (!BuildPipeline.IsBuildTargetSupported(targetGroup, target))
+            {
+                Debug.LogWarning("Build target is not installed");
+                return null;
+            }
             var result = BuildPipeline.BuildPlayer(options);
             await Task.Yield();
             return result;
