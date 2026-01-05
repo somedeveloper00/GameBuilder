@@ -1,4 +1,5 @@
-![image](https://github.com/somedeveloper00/GameBuilder/assets/79690923/cf74d3b3-5d5f-4f2e-9301-b0c851b923c7)
+![image](https://github.com/user-attachments/assets/1eb9100e-4baa-4d6d-993c-b300c3979117)
+
 
 ### Advantages
 - Separate Scene settings for each platform
